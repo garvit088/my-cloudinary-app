@@ -3,11 +3,21 @@ import cloudinary from '@/utils/cloudinary';
 
 export async function GET() {
   try {
-    const result = await cloudinary.search
-      .expression(`folder:${process.env.CLOUDINARY_FOLDER}`)
-      .execute();
+    let allResources: any[] = [];
+    let nextCursor: string | undefined;
 
-    const files = result.resources.map((resource: any) => ({
+    do {
+      const result = await cloudinary.search
+        .expression(`folder:${process.env.CLOUDINARY_FOLDER}`)
+        .max_results(500) // Increase this if you have more than 500 files
+        .next_cursor(nextCursor)
+        .execute();
+
+      allResources = [...allResources, ...result.resources];
+      nextCursor = result.next_cursor;
+    } while (nextCursor);
+
+    const files = allResources.map((resource: any) => ({
       publicId: resource.public_id,
       url: resource.secure_url,
       format: resource.format,
